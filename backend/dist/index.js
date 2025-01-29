@@ -9,12 +9,15 @@ wss.on('connection', function connection(ws) {
     ws.on('message', function message(data) {
         const message = JSON.parse(data);
         if (message.type === 'identify-as-sender') {
+            console.log('sender identified');
             senderSocket = ws;
         }
         else if (message.type === 'identify-as-receiver') {
+            console.log('receiver identified');
             receiverSocket = ws;
         }
         else if (message.type === 'create-offer') {
+            console.log('offer created');
             if (ws !== senderSocket) {
                 ws.send('You are not the sender');
                 return;
@@ -24,6 +27,7 @@ wss.on('connection', function connection(ws) {
             }
         }
         else if (message.type === 'create-answer') {
+            console.log('answer created');
             if (ws != receiverSocket) {
                 ws.send('You are not the receiver');
                 return;
