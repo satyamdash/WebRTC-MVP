@@ -40,10 +40,10 @@ wss.on('connection', function connection(ws) {
     }
     else if(message.type === 'ice-candidate') {
       if(ws === senderSocket) {
-        receiverSocket?.send(JSON.stringify({ type: 'icecandidate', candidate: message.candidate }));
+        receiverSocket?.send(JSON.stringify({ type: 'ice-candidate', candidate: message.candidate }));
       }
       else if(receiverSocket && ws === receiverSocket) {
-        senderSocket?.send(JSON.stringify({ type: 'icecandidate', candidate: message.candidate }));
+        senderSocket?.send(JSON.stringify({ type: 'ice-candidate', candidate: message.candidate }));
       }
     }
     

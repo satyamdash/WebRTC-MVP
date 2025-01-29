@@ -38,10 +38,10 @@ wss.on('connection', function connection(ws) {
         }
         else if (message.type === 'ice-candidate') {
             if (ws === senderSocket) {
-                receiverSocket === null || receiverSocket === void 0 ? void 0 : receiverSocket.send(JSON.stringify({ type: 'icecandidate', candidate: message.candidate }));
+                receiverSocket === null || receiverSocket === void 0 ? void 0 : receiverSocket.send(JSON.stringify({ type: 'ice-candidate', candidate: message.candidate }));
             }
             else if (receiverSocket && ws === receiverSocket) {
-                senderSocket === null || senderSocket === void 0 ? void 0 : senderSocket.send(JSON.stringify({ type: 'icecandidate', candidate: message.candidate }));
+                senderSocket === null || senderSocket === void 0 ? void 0 : senderSocket.send(JSON.stringify({ type: 'ice-candidate', candidate: message.candidate }));
             }
         }
     });

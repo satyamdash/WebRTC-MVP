@@ -9,31 +9,47 @@ export default function Sender() {
             socket.onopen=()=>{
                 socket.send(JSON.stringify({type:'identify-as-sender'}));
             } 
+            setSocket(socket);
 }, [])
 
-    function StartSendingVideo(){
+    async function  StartSendingVideo(){
         const pc=new RTCPeerConnection();
-        pc.createOffer().then((offer)=>{
+
+        pc.onnegotiationneeded=()=>
+        {
+            console.log('negotiation needed');
+            pc.createOffer().then((offer)=>{
             pc.setLocalDescription(offer);
-            
             socket?.send(JSON.stringify({type:'create-offer',sdp:offer}));
+        })};
 
-            if(!socket){
-                return;
+        pc.onicecandidate=(event)=>{
+            console.log(event);
+            if(event.candidate){
+                socket?.send(JSON.stringify({type:'ice-candidate',candidate:event.candidate}));
             }
-            socket.onmessage=(event)=>{
-                const data=JSON.parse(event.data);
-                if(data.type==='createanswer'){
-                    pc.setRemoteDescription(data.sdp);
-                }
-            }
-        });
+        }
 
-    }
-return (
-        <div>   
-            <div>Sender</div>
-            <button onClick={StartSendingVideo}>SendVideo</button>
-         </div>
-    );
+        if(!socket){
+            return;
+        }
+        socket.onmessage=(event)=>{
+            const data=JSON.parse(event.data);
+            if(data.type==='createanswer'){
+                pc.setRemoteDescription(data.sdp);
+            }
+            else if(data.type==='icecandidate'){
+                pc.addIceCandidate(data.candidate);
+        }}
+
+        const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+        pc.addTrack(stream.getTracks()[0]);
+
+        };
+        return (
+            <div>   
+                <div>Sender</div>
+                <button onClick={StartSendingVideo}>SendVideo</button>
+            </div>
+            );
 }
