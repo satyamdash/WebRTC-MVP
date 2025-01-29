@@ -1,8 +1,15 @@
+import { useEffect } from "react";
+
 export default function Sender() {
-    return (
-        <div>
-            <h1>Sender</h1>
-            <p>Sender component</p>
-        </div>
+
+        useEffect(() => {
+            const socket=new WebSocket("ws://localhost:8080");
+            socket.onopen=()=>{
+                socket.send(JSON.stringify({type:'identify-as-sender'}));
+            } 
+}, [])
+return (
+
+    <div>Sender</div>
     );
 }
