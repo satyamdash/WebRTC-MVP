@@ -1,6 +1,6 @@
 import { BrowserRouter,Routes,Route } from "react-router-dom";
-import Sender from "./components/sender";
-import Receiver from "./components/receiver";
+import {Sender} from "./components/sender";
+import { Receiver } from "./components/receiver";
 
 export default function App() {
   return (

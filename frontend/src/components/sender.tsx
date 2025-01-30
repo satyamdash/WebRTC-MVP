@@ -1,55 +1,78 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"
 
-export default function Sender() {
+export const Sender = () => {
+    const [socket, setSocket] = useState<WebSocket | null>(null);
+    const [pc, setPC] = useState<RTCPeerConnection | null>(null);
 
-    const [socket,setSocket]=useState<WebSocket|null>(null);
-
-        useEffect(() => {
-            const socket=new WebSocket("ws://localhost:8080");
-            socket.onopen=()=>{
-                socket.send(JSON.stringify({type:'identify-as-sender'}));
-            } 
-            setSocket(socket);
-}, [])
-
-    async function  StartSendingVideo(){
-        const pc=new RTCPeerConnection();
-
-        pc.onnegotiationneeded=()=>
-        {
-            console.log('negotiation needed');
-            pc.createOffer().then((offer)=>{
-            pc.setLocalDescription(offer);
-            socket?.send(JSON.stringify({type:'create-offer',sdp:offer}));
-        })};
-
-        pc.onicecandidate=(event)=>{
-            console.log(event);
-            if(event.candidate){
-                socket?.send(JSON.stringify({type:'ice-candidate',candidate:event.candidate}));
-            }
+    useEffect(() => {
+        const socket = new WebSocket('ws://localhost:8080');
+        setSocket(socket);
+        socket.onopen = () => {
+            console.log('sender connected');
+            socket.send(JSON.stringify({
+                type: 'sender'
+            }));
         }
+    }, []);
 
-        if(!socket){
+    const initiateConn = async () => {
+
+        if (!socket) {
+            alert("Socket not found");
             return;
         }
-        socket.onmessage=(event)=>{
-            const data=JSON.parse(event.data);
-            if(data.type==='createanswer'){
-                pc.setRemoteDescription(data.sdp);
+
+        socket.onmessage = async (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'createAnswer') {
+                await pc.setRemoteDescription(message.sdp);
+            } else if (message.type === 'iceCandidate') {
+                pc.addIceCandidate(message.candidate);
             }
-            else if(data.type==='icecandidate'){
-                pc.addIceCandidate(data.candidate);
-        }}
+        }
 
-        const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-        pc.addTrack(stream.getTracks()[0]);
+        const pc = new RTCPeerConnection();
+        setPC(pc);
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                console.log('sending ice candidate');
+                socket?.send(JSON.stringify({
+                    type: 'iceCandidate',
+                    candidate: event.candidate
+                }));
+            }
+        }
 
-        };
-        return (
-            <div>   
-                <div>Sender</div>
-                <button onClick={StartSendingVideo}>SendVideo</button>
-            </div>
-            );
+        pc.onnegotiationneeded = async () => {
+            console.log('negotiation needed');
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket?.send(JSON.stringify({
+                type: 'createOffer',
+                sdp: pc.localDescription
+            }));
+        }
+            
+        getCameraStreamAndSend(pc);
+    }
+
+    const getCameraStreamAndSend = (pc: RTCPeerConnection) => {
+
+        navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+            console.log('got stream');
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.autoplay = true;
+            // this is wrong, should propogate via a component
+            document.body.appendChild(video);
+            stream.getTracks().forEach((track) => {
+                pc?.addTrack(track);
+            });
+        });
+    }
+
+    return <div>
+        Sender
+        <button onClick={initiateConn}> Send data </button>
+    </div>
 }

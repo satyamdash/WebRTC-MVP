@@ -1,4 +1,4 @@
-import { WebSocketServer,WebSocket } from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -10,44 +10,32 @@ wss.on('connection', function connection(ws) {
 
   ws.on('message', function message(data: any) {
     const message = JSON.parse(data);
-    if(message.type === 'identify-as-sender') {
-        console.log('sender identified');
+    if (message.type === 'sender') {
+        console.log('sender connected');
       senderSocket = ws;
-    }
-    else if(message.type === 'identify-as-receiver') {
-        console.log('receiver identified');
+    } else if (message.type === 'receiver') {
+        console.log('receiver connected');
       receiverSocket = ws;
-    }
-    else if(message.type === 'create-offer') {
-        console.log('offer created');
-        if(ws!==senderSocket){
-            ws.send('You are not the sender');
-            return;
+    } else if (message.type === 'createOffer') {
+        console.log('createOffer');
+      if (ws !== senderSocket) {
+        return;
+      }
+      receiverSocket?.send(JSON.stringify({ type: 'createOffer', sdp: message.sdp }));
+    } else if (message.type === 'createAnswer') {
+        console.log('createAnswer');
+        if (ws !== receiverSocket) {
+          return;
         }
-      if(receiverSocket) {
-        receiverSocket.send(JSON.stringify({ type: 'createoffer', sdp: message.sdp }));
+        senderSocket?.send(JSON.stringify({ type: 'createAnswer', sdp: message.sdp }));
+    } else if (message.type === 'iceCandidate') {
+        console.log('sender iceCandidate');
+      if (ws === senderSocket) {
+        receiverSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
+      } else if (ws === receiverSocket) {
+        console.log('receiver iceCandidate');
+        senderSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
       }
     }
-    else if(message.type === 'create-answer') {
-        console.log('answer created');
-        if(ws!=receiverSocket){
-            ws.send('You are not the receiver');
-            return;
-        }
-      if(senderSocket) {
-        senderSocket.send(JSON.stringify({ type: 'createanswer', sdp: message.sdp }));
-      }
-    }
-    else if(message.type === 'ice-candidate') {
-      if(ws === senderSocket) {
-        receiverSocket?.send(JSON.stringify({ type: 'ice-candidate', candidate: message.candidate }));
-      }
-      else if(receiverSocket && ws === receiverSocket) {
-        senderSocket?.send(JSON.stringify({ type: 'ice-candidate', candidate: message.candidate }));
-      }
-    }
-    
-    });
-
-  ws.send('something');
-}); 
+  });
+});
