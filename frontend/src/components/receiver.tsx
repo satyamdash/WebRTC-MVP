@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 export const Receiver = () => {
     
     useEffect(() => {
-        const socket = new WebSocket('ws://localhost:8080');
+        const socket = new WebSocket('ws://localhost:8081');
         socket.onopen = () => {
             console.log('receiver connected');
             socket.send(JSON.stringify({
